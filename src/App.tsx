@@ -256,7 +256,7 @@ const App = () => {
     try {
       const responseStr = await executeAiWithFallback(apiKeys, activeApiKeyIndex, setActiveApiKeyIndex, async (genAI) => {
         const response = await genAI.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-2.5-flash",
           contents: "You are a professional translator. Translate the text directly and return a valid JSON object matching this schema: {\"en\": \"English translation\", \"zh\": \"Chinese translation\"}. IMPORTANT: Output MUST be a valid JSON string. Escape all newlines as \\n. DO NOT translate or change character names: NAM, NGỌC, THƯ. Keep them exactly as they are in all languages.\n\nVietnamese text:\n" + prompt.vi
         });
         return response.text;
@@ -406,7 +406,7 @@ const App = () => {
     try {
       const suggestedText = await executeAiWithFallback(apiKeys, activeApiKeyIndex, setActiveApiKeyIndex, async (genAI) => {
         const response = await genAI.models.generateContent({
-          model: 'gemini-3.5-flash',
+          model: 'gemini-2.5-flash',
           contents: `Bạn là một chuyên gia sáng tạo kịch bản Mukbang đỉnh cao.
 Dựa trên món ăn hiện tại: "${currentFood}" và MỨC ĐỘ KÍCH THƯỚC ĐÃ CHỌN: "${foodSizeLevel}" (gồm các mức: "Vừa", "To", "Khổng lồ"), hãy viết 1 đoạn mô tả chi tiết, chân thực và sinh động về KÍCH THƯỚC MÓN ĂN và DỤNG CỤ ĐỰNG/ĐỔ NƯỚC SỐT CHẤM ĐI KÈM đúng chuẩn theo đúng mức độ "${foodSizeLevel}":
 
@@ -478,7 +478,7 @@ Yêu cầu:
 
       const suggestedText = await executeAiWithFallback(apiKeys, activeApiKeyIndex, setActiveApiKeyIndex, async (genAI) => {
         const response = await genAI.models.generateContent({
-          model: 'gemini-3.5-flash',
+          model: 'gemini-2.5-flash',
           contents: contentsPayload
         });
         return response.text;
@@ -611,7 +611,7 @@ Yêu cầu:
       try {
         const responseStr = await executeAiWithFallback(apiKeys, activeApiKeyIndex, setActiveApiKeyIndex, async (genAI) => {
           const response = await genAI.models.generateContent({
-              model: 'gemini-3.5-flash',
+              model: 'gemini-2.5-flash',
               contents: `Bạn là một đạo diễn video Mukbang chuyên nghiệp.
 Hãy tạo kịch bản chi tiết cho ${numPrompts} phần liên tiếp của một video Mukbang (Mỗi phần tương ứng 1 kịch bản kéo dài 12s).
 Tức là nếu video tổng cộng 24s sẽ có 2 phần, 36s sẽ có 3 phần.
