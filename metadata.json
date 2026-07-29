@@ -1,0 +1,8 @@
+{
+  "name": "MUKBANG BÓC VỎ",
+  "description": "Ứng dụng tạo kịch bản AI Mukbang bóc bỏ vỏ và chỉ ăn thịt tôm",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
