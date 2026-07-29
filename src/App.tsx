@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Users, Utensils, Zap, Copy, Check, Globe, Clock, Flame, ChevronUp, ChevronDown, MonitorPlay, Droplets, Wind, Star, Search, PlusCircle, Coffee, EyeOff, Shirt, Sparkles, Link, ShoppingBag, Key, Download, RefreshCw, X, Gift, Ruler, History, Trash2, RotateCcw, FileText, ChevronRight, Play } from 'lucide-react';
+import { Camera, Users, Utensils, Zap, Copy, Check, Globe, Clock, Flame, ChevronUp, ChevronDown, MonitorPlay, Droplets, Wind, Star, Search, PlusCircle, Coffee, EyeOff, Shirt, Sparkles, Link, ShoppingBag, Key, Download, RefreshCw, X, Gift, Ruler, History, Trash2, RotateCcw, FileText, ChevronRight, Play, AlertTriangle } from 'lucide-react';
 import { executeAiWithFallback } from './aiService';
 
 export interface HistoryItem {
@@ -122,6 +122,68 @@ const App = () => {
   });
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
 
+  // System Popup Modal State for Errors
+  const [errorModal, setErrorModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    details?: string;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    details: ''
+  });
+
+  const triggerErrorPopup = (title: string, message: string, details?: string) => {
+    setErrorModal({
+      show: true,
+      title: title || 'Thông Báo Lỗi System',
+      message: message || 'Đã xảy ra lỗi trong quá trình xử lý.',
+      details: details || ''
+    });
+  };
+
+  useEffect(() => {
+    const handleGlobalError = (event: ErrorEvent) => {
+      console.error("Global error caught:", event.error || event.message);
+      triggerErrorPopup("Lỗi Hệ Thống", event.message || "Đã xảy ra lỗi không xác định.", event.error?.stack || "");
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      console.error("Unhandled promise rejection:", event.reason);
+      const reasonStr = typeof event.reason === 'object' && event.reason !== null
+        ? (event.reason.message || JSON.stringify(event.reason))
+        : String(event.reason);
+      triggerErrorPopup("Lỗi Xử Lý Hệ Thống", reasonStr, typeof event.reason === 'object' ? event.reason?.stack : "");
+    };
+
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
+  const handleSelectNumCharacters = (num: number) => {
+    setNumCharacters(num);
+    // Khi chọn nhân vật thì toàn bộ thao tác & cài đặt hiện tại sẽ bị xóa để người dùng tạo 1 cài đặt mới
+    setGeneratedPrompts(null);
+    setCustomFood('');
+    setFoodSizeDetails('');
+    setOutfitNam('');
+    setOutfitNgoc('');
+    setOutfitThu('');
+    setCustomOutfit('');
+    setCustomSetting('');
+    setProductName('');
+    setProductActionDescription('');
+    setProductImage(null);
+    setDialogueInput('');
+  };
+
   useEffect(() => {
     const stateObj = {
       numCharacters, outfitMode, customOutfit, outfitNam, outfitNgoc, outfitThu, settingMode, customSetting, theme, customFood, foodSizeLevel, foodSizeDetails, duration, isCommerceMode, productName, productCategory, productActionDescription, productImage, cameraStyle, eatingStyle, characterActionStyle, generationMode, generatedPrompts, dialogueInput, isDialogueEnabled
@@ -209,7 +271,7 @@ const App = () => {
       }
     } catch (e) {
       console.error("Lỗi đồng bộ:", e);
-      alert("Đồng bộ thất bại, vui lòng kiểm tra API key v\u00e0 thử lại.");
+      triggerErrorPopup("Lỗi Đồng Bộ Kịch Bản", "Đồng bộ thất bại, vui lòng kiểm tra API key và thử lại.", (e as any)?.message || String(e));
     } finally {
       setSyncingPromptId(null);
     }
@@ -264,7 +326,7 @@ const App = () => {
       setShowApiKeyModal(false);
       setActiveApiKeyIndex(0);
     } else {
-      alert("Vui lòng nhập ít nhất 1 API key.");
+      triggerErrorPopup("Thiếu API Key", "Vui lòng nhập ít nhất 1 Google Gemini API key hợp lệ.");
     }
   };
 
@@ -364,8 +426,9 @@ Yêu cầu BẮT BUỘC:
       if (suggestedText) {
         setFoodSizeDetails(suggestedText.trim());
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi khi tạo gợi ý kích thước:", err);
+      triggerErrorPopup("Lỗi Tạo Gợi Ý Kích Thước", "Không thể gợi ý mô tả kích thước từ AI. Vui lòng thử lại sau.", err?.message || String(err));
     } finally {
       setIsSuggestingSize(false);
     }
@@ -373,7 +436,7 @@ Yêu cầu BẮT BUỘC:
 
   const handleSuggestProductAction = async () => {
     if (!productName.trim() && !productImage) {
-      alert("Vui lòng nhập tên sản phẩm bán hàng hoặc tải ảnh sản phẩm lên trước.");
+      triggerErrorPopup("Thiếu Thông Tin Sản Phẩm", "Vui lòng nhập tên sản phẩm bán hàng hoặc tải ảnh sản phẩm lên trước.");
       return;
     }
     setIsSuggestingProductAction(true);
@@ -462,7 +525,7 @@ Yêu cầu:
 
   const generatePrompts = async () => {
     if (apiKeys.length === 0) {
-      alert("Vui lòng nhập API Key để sử dụng các tính năng AI của hệ thống.");
+      triggerErrorPopup("Thiếu Gemini API Key", "Vui lòng nhập API Key để sử dụng các tính năng AI của hệ thống.");
       setShowApiKeyModal(true);
       return;
     }
@@ -625,7 +688,7 @@ Trả về ĐÚNG MỘT MẢNG JSON, không có text dư thừa, không có th�
         }
       } catch (e: any) {
         console.error("AI Generation failed:", e);
-        alert("Lỗi khi kết nối AI tạo kịch bản: " + e.message);
+        triggerErrorPopup("Lỗi AI Tạo Kịch Bản", "Không thể tạo kịch bản từ AI. Vui lòng kiểm tra API Key hoặc kết nối mạng.", e?.message || String(e));
         setIsGenerating(false);
         return;
       }
@@ -857,6 +920,7 @@ Trả về ĐÚNG MỘT MẢNG JSON, không có text dư thừa, không có th�
       setLoginError('');
     } else {
       setLoginError('Tên đăng nhập hoặc mật khẩu không đúng');
+      triggerErrorPopup('Lỗi Đăng Nhập', 'Số điện thoại/Tài khoản hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.');
     }
   };
 
@@ -1143,6 +1207,59 @@ Trả về ĐÚNG MỘT MẢNG JSON, không có text dư thừa, không có th�
         </div>
       )}
 
+      {/* System Error Popup Modal */}
+      {errorModal.show && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in duration-200">
+          <div className="bg-neutral-950 border-2 border-red-500/80 rounded-3xl p-6 max-w-md w-full shadow-2xl shadow-red-950/60 space-y-4 relative text-left">
+            <button
+              type="button"
+              onClick={() => setErrorModal(prev => ({ ...prev, show: false }))}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-red-500/30 pb-3">
+              <div className="p-2.5 rounded-2xl bg-red-950/80 text-red-400 border border-red-500/40 shrink-0">
+                <AlertTriangle size={24} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-black text-red-400 uppercase tracking-wide truncate">
+                  {errorModal.title || 'Thông Báo Lỗi Hệ Thống'}
+                </h3>
+                <p className="text-[11px] text-neutral-400 font-medium">Chi tiết lỗi được phát hiện từ hệ thống</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="bg-red-950/30 border border-red-500/20 p-4 rounded-2xl">
+                <p className="text-xs sm:text-sm font-bold text-neutral-100 leading-relaxed whitespace-pre-wrap break-words">
+                  {errorModal.message}
+                </p>
+              </div>
+
+              {errorModal.details && (
+                <div className="bg-neutral-900/90 border border-neutral-800 p-3 rounded-xl max-h-36 overflow-y-auto">
+                  <p className="text-[10px] font-mono text-neutral-400 whitespace-pre-wrap break-all leading-tight">
+                    {errorModal.details}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setErrorModal(prev => ({ ...prev, show: false }))}
+                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-black text-xs rounded-xl shadow-lg shadow-red-950/50 transition-all active:scale-95 uppercase tracking-wider"
+              >
+                Đồng ý / Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Scientific Dashboard Layout */}
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
@@ -1167,7 +1284,7 @@ Trả về ĐÚNG MỘT MẢNG JSON, không có text dư thừa, không có th�
                     <button 
                       key={num} 
                       type="button"
-                      onClick={() => setNumCharacters(num)} 
+                      onClick={() => handleSelectNumCharacters(num)} 
                       className={`flex-1 py-2 rounded-xl font-extrabold text-xs transition-all ${
                         numCharacters === num 
                           ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-950/60 border border-orange-400/40' 
